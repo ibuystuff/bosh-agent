@@ -2,6 +2,7 @@ package devicepathresolver_test
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -61,7 +62,9 @@ var _ = Describe("ScsiIDDevicePathResolver", func() {
 				path, timeout, err := pathResolver.GetRealDevicePath(diskSettings)
 				Expect(err).ToNot(HaveOccurred())
 
-				Expect(path).To(Equal("/fake-device-path"))
+				expectedPath, err := filepath.Abs("/fake-device-path")
+				Expect(err).ToNot(HaveOccurred())
+				Expect(path).To(Equal(expectedPath))
 				Expect(timeout).To(BeFalse())
 
 				for _, host := range hosts {
@@ -112,7 +115,9 @@ var _ = Describe("ScsiIDDevicePathResolver", func() {
 					path, timeout, err := pathResolver.GetRealDevicePath(diskSettings)
 					Expect(err).ToNot(HaveOccurred())
 
-					Expect(path).To(Equal("/fake-device-path"))
+					expectedPath, err := filepath.Abs("/fake-device-path")
+					Expect(err).ToNot(HaveOccurred())
+					Expect(path).To(Equal(expectedPath))
 					Expect(timeout).To(BeFalse())
 				})
 			})

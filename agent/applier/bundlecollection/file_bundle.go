@@ -1,8 +1,10 @@
 package bundlecollection
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"code.cloudfoundry.org/clock"
 	bosherr "github.com/cloudfoundry/bosh-utils/errors"
@@ -97,8 +99,10 @@ func (b FileBundle) Enable() (string, error) {
 
 func (b FileBundle) Disable() error {
 	b.logger.Debug(fileBundleLogTag, "Disabling %v", b)
+	fmt.Fprintf(os.Stdout, "Disabling %v\n", b)
 
-	target, err := b.fs.ReadAndFollowLink(b.enablePath)
+	//TODO: Replace ReadAndFollowLink with ReadLink as ReadLink doesn't seem to recursively follow SymLinks
+	target, err := b.fs.Readlink(b.enablePath)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return nil
@@ -106,7 +110,23 @@ func (b FileBundle) Disable() error {
 		return bosherr.WrapError(err, "Reading symlink")
 	}
 
-	if target == b.installPath {
+	fmt.Fprintf(os.Stdout, "enabledPath Target %s\n", target)
+
+	installPath := b.installPath
+	if strings.HasPrefix(installPath, "/") {
+		installPath, err = filepath.Abs(installPath)
+		fmt.Fprintf(os.Stdout, "installPath Abs %s\n", installPath)
+		if err != nil {
+			return bosherr.WrapError(err, "Failed to convert install path to native OS path")
+		}
+		//installPath, err = b.fs.ReadAndFollowLink(installPath)
+		fmt.Fprintf(os.Stdout, "installPath ReadAndFollowLink %s\n", installPath)
+	}
+
+	b.logger.Debug(fileBundleLogTag, "Comparing path %s to %s", installPath, target)
+	fmt.Fprintf(os.Stdout, "Comparing path %s to %s\n", installPath, target)
+
+	if target == installPath {
 		return b.fs.RemoveAll(b.enablePath)
 	}
 
